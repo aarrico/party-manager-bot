@@ -33,3 +33,16 @@ export const getAllCampaigns = async (): Promise<Campaign[]> => {
     orderBy: { name: 'asc' },
   });
 };
+
+/**
+ * Get campaign details including guildId for a given campaignId (channel ID).
+ * Useful for generating Discord URLs and accessing guild-level features like scheduled events.
+ */
+export const getCampaignWithGuildId = async (
+  campaignId: string
+): Promise<{ id: string; name: string; guildId: string } | null> => {
+  return await prisma.campaign.findUnique({
+    where: { id: campaignId },
+    select: { id: true, name: true, guildId: true },
+  });
+};
