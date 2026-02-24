@@ -23,8 +23,7 @@
     "format": "prettier --config config/.prettierrc --write src/",
     "format:check": "prettier --config config/.prettierrc --check src/",
     "test": "vitest run --config config/vitest.config.ts",
-    "test:watch": "vitest --config config/vitest.config.ts",
-    "generate-image": "tsx src/scripts/generate-session-image.ts"
+    "test:watch": "vitest --config config/vitest.config.ts"
   },
   "imports": {
     "#app/*": {
@@ -64,8 +63,8 @@
     "@date-fns/tz": "^1.4.1",
     "@date-fns/utc": "^2.1.1",
     "@napi-rs/canvas": "^0.1.78",
-    "@prisma/adapter-pg": "^6.0.0",
-    "@prisma/client": "^7.1.0",
+    "@prisma/adapter-pg": "^7.4.1",
+    "@prisma/client": "^7.4.1",
     "cron": "^3.5.0",
     "date-fns": "^4.1.0",
     "discord.js": "^14.22.1",
@@ -86,7 +85,7 @@
     "eslint": "^9.34.0",
     "globals": "^15.15.0",
     "prettier": "^3.6.2",
-    "prisma": "^7.1.0",
+    "prisma": "^7.4.1",
     "tsc-alias": "^1.8.16",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",

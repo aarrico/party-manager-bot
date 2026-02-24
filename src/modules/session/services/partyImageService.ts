@@ -93,5 +93,5 @@ export const getPartyInfoForImg = async (
 ): Promise<PartyMemberImgInfo[]> => {
   const session = await getSession(sessionId);
   const party = await getParty(sessionId);
-  return convertPartyToImgInfo(party, session.campaignId);
+  return convertPartyToImgInfo(party, session.guildId);
 };

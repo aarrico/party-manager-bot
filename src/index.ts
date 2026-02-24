@@ -1,7 +1,6 @@
 import { config } from 'dotenv';
 config();
 import 'source-map-support/register.js';
-import http from 'http';
 import { ExtendedClient } from './shared/discord/ExtendedClient.js';
 import { PrismaClient, Prisma } from './generated/prisma/client.js';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -11,6 +10,7 @@ import { ActionRowBuilder, ButtonBuilder, Events } from 'discord.js';
 import { setRoleCache } from './modules/role/domain/roleManager.js';
 import { sessionScheduler } from './services/sessionScheduler.js';
 import { createScopedLogger } from '#shared/logging/logger.js';
+import { createAdminServer } from '#shared/http/adminServer.js';
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,
@@ -95,19 +95,11 @@ await (async () => {
   }
 })();
 
-// Health check server for Railway/Docker
-const healthPort = parseInt(process.env.PORT || '3000', 10);
-const healthServer = http.createServer((req, res) => {
-  if (req.url === '/health') {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('OK');
-  } else {
-    res.writeHead(404);
-    res.end();
-  }
-});
-healthServer.listen(healthPort, () => {
-  appLogger.info(`Health check listening on port ${healthPort}`);
+// HTTP server for health checks and admin API
+const httpPort = parseInt(process.env.PORT || '3000', 10);
+const httpServer = createAdminServer();
+httpServer.listen(httpPort, () => {
+  appLogger.info(`HTTP server listening on port ${httpPort}`);
 });
 
 // Graceful shutdown handling
@@ -121,9 +113,9 @@ async function gracefulShutdown(signal: string): Promise<void> {
       sessionScheduler.shutdown();
     }
 
-    // Close health check server
-    shutdownLogger.info('Closing health check server...');
-    healthServer.close();
+    // Close HTTP server
+    shutdownLogger.info('Closing HTTP server...');
+    httpServer.close();
 
     // Destroy Discord client connection
     shutdownLogger.info('Closing Discord connection...');

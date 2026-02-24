@@ -1,6 +1,5 @@
 import {
   createSession as createSessionInDb,
-  getCampaignWithGuildId,
   getLastCompletedSessionInChannel,
   getParty,
   getSession,
@@ -112,6 +111,7 @@ export const initSession = async (
     name: sessionName,
     date,
     campaignId: campaign.id,
+    guildId: guild.id,
     status: 'SCHEDULED' as SessionStatus,
     timezone,
   };
@@ -155,6 +155,7 @@ export const initSession = async (
     name: session.name,
     date: session.date,
     campaignId: session.campaignId,
+    guildId: guild.id,
     status: session.status as SessionStatus,
     timezone: session.timezone ?? 'America/Los_Angeles',
     eventId: session.eventId,
@@ -421,7 +422,7 @@ export const cancelSession = async (sessionId: string, reason: string) => {
   // Delete Discord scheduled event if it exists (non-blocking)
   if (session.eventId) {
     try {
-      await deleteScheduledEvent(session.campaignId, session.eventId);
+      await deleteScheduledEvent(session.guildId, session.eventId);
       logger.info('Deleted scheduled event for canceled session', {
         sessionId,
         eventId: session.eventId,
@@ -465,10 +466,6 @@ export const cancelSession = async (sessionId: string, reason: string) => {
   }
 
   try {
-    // Get guildId for Discord URL
-    const campaign = await getCampaignWithGuildId(session.campaignId);
-    const guildId = campaign?.guildId ?? '';
-
     await notifyParty(
       session.partyMembers.map((member) => member.userId),
       async (userId: string) => {
@@ -477,7 +474,7 @@ export const cancelSession = async (sessionId: string, reason: string) => {
 
         return (
           `❌ **Session Canceled**\n\n` +
-          `🎲 **[${session.name}](https://discord.com/channels/${guildId}/${session.campaignId}/${session.id})** has been canceled.\n` +
+          `🎲 **[${session.name}](https://discord.com/channels/${session.guildId}/${session.campaignId}/${session.id})** has been canceled.\n` +
           `📅 **Was scheduled for:** ${sessionTime}\n` +
           `❗ **Reason:** ${reason}\n\n` +
           `We apologize for any inconvenience. 🎯`
@@ -519,7 +516,7 @@ export const endSession = async (sessionId: string) => {
   // Delete Discord scheduled event if it exists (non-blocking)
   if (session.eventId) {
     try {
-      await deleteScheduledEvent(session.campaignId, session.eventId);
+      await deleteScheduledEvent(session.guildId, session.eventId);
       logger.info('Deleted scheduled event for ended session', {
         sessionId,
         eventId: session.eventId,
@@ -638,7 +635,7 @@ export const modifySession = async (interaction: ExtendedInteraction) => {
 
         const eventIdString = session.eventId;
         const success = await updateScheduledEvent(
-          session.campaignId,
+          session.guildId,
           eventIdString,
           updates
         );

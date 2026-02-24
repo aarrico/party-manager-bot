@@ -3,11 +3,12 @@ import { PartyMember } from '#modules/party/domain/party.types.js';
 import {
   ListSessionsOptions,
   ListSessionsResult,
+  Session,
   SessionWithParty,
   CreateSessionData,
   SessionStatus,
 } from '#modules/session/domain/session.types.js';
-import { RoleType, Session } from '#generated/prisma/client.js';
+import { RoleType, Session as PrismaSession } from '#generated/prisma/client.js';
 import { createScopedLogger } from '#shared/logging/logger.js';
 
 const logger = createScopedLogger('SessionRepository');
@@ -16,7 +17,7 @@ export const createSession = async (
   sessionData: CreateSessionData,
   userId: string,
   party?: PartyMember[]
-): Promise<Session> => {
+): Promise<PrismaSession> => {
   const { campaignId, ...session } = sessionData;
 
   logger.debug('Creating session in database', {
@@ -72,6 +73,7 @@ export const getSession = async (
   const session = await prisma.session.findUniqueOrThrow({
     where: { id: sessionId },
     include: {
+      campaign: { select: { guildId: true } },
       partyMembers: {
         select: {
           user: true,
@@ -93,6 +95,7 @@ export const getSession = async (
     name: session.name,
     date: session.date,
     campaignId: session.campaignId,
+    guildId: session.campaign.guildId,
     eventId: session.eventId ?? undefined,
     timezone: session.timezone ?? 'America/Los_Angeles',
     status: session.status as SessionStatus,
@@ -180,12 +183,27 @@ export async function getSessionById(
   includeParty = false
 ): Promise<Session | SessionWithParty> {
   if (!includeParty) {
-    return prisma.session.findUniqueOrThrow({ where: { id } });
+    const session = await prisma.session.findUniqueOrThrow({
+      where: { id },
+      include: { campaign: { select: { guildId: true } } },
+    });
+
+    return {
+      id: session.id,
+      name: session.name,
+      date: session.date,
+      campaignId: session.campaignId,
+      guildId: session.campaign.guildId,
+      eventId: session.eventId ?? undefined,
+      status: session.status as SessionStatus,
+      timezone: session.timezone ?? 'America/Los_Angeles',
+    };
   }
 
   const session = await prisma.session.findUniqueOrThrow({
     where: { id },
     include: {
+      campaign: { select: { guildId: true } },
       partyMembers: {
         include: {
           user: true,
@@ -200,6 +218,7 @@ export async function getSessionById(
     name: session.name,
     date: session.date,
     campaignId: session.campaignId,
+    guildId: session.campaign.guildId,
     eventId: session.eventId ?? undefined,
     status: session.status as SessionStatus,
     timezone: session.timezone ?? 'America/Los_Angeles',
@@ -212,13 +231,13 @@ export async function getSessionById(
   };
 }
 
-export const deleteSessionById = async (id: string): Promise<Session> =>
+export const deleteSessionById = async (id: string): Promise<PrismaSession> =>
   prisma.session.delete({ where: { id } });
 
 export const updateSession = async (
   sessionId: string,
   data: Partial<CreateSessionData>
-): Promise<Session> => {
+): Promise<PrismaSession> => {
   const updateData = {
     ...(data.name && { name: data.name }),
     ...(data.date && {
@@ -307,19 +326,6 @@ export const isUserMemberOnDate = async (
 };
 
 /**
- * Get campaign details including guildId for a given campaignId (channel ID).
- * Useful for generating Discord URLs and accessing guild-level features like scheduled events.
- */
-export const getCampaignWithGuildId = async (
-  campaignId: string
-): Promise<{ id: string; name: string; guildId: string } | null> => {
-  return await prisma.campaign.findUnique({
-    where: { id: campaignId },
-    select: { id: true, name: true, guildId: true },
-  });
-};
-
-/**
  * Get active sessions (not completed or canceled) for a guild, optionally filtered by campaign.
  */
 export const getActiveSessionsForGuild = async (
@@ -400,7 +406,7 @@ export const getCompletedSessionsForGuild = async (
  */
 export const getLastCompletedSessionInChannel = async (
   channelId: string
-): Promise<Session | null> => {
+): Promise<PrismaSession | null> => {
   return await prisma.session.findFirst({
     where: {
       campaignId: channelId,
@@ -415,7 +421,7 @@ export const getLastCompletedSessionInChannel = async (
  */
 export const getActiveSessionsByCampaignId = async (
   campaignId: string
-): Promise<Session[]> => {
+): Promise<PrismaSession[]> => {
   return await prisma.session.findMany({
     where: {
       campaignId,
@@ -431,7 +437,7 @@ export const getActiveSessionsByCampaignId = async (
  */
 export const getActiveSessionInChannel = async (
   channelId: string
-): Promise<Session | null> => {
+): Promise<PrismaSession | null> => {
   const session = await prisma.session.findFirst({
     where: {
       campaignId: channelId,

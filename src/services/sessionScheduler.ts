@@ -1,6 +1,5 @@
 import { CronJob } from 'cron';
 import {
-  getCampaignWithGuildId,
   getSessionById,
   getSessions,
   updateSession,
@@ -350,19 +349,15 @@ class SessionScheduler {
     }
   }
 
-  private async createReminderMessage(
+  private createReminderMessage(
     session: SessionWithParty,
     timezone: string
-  ): Promise<string> {
+  ): string {
     const sessionTime = formatSessionDateLong(session.date, timezone);
-
-    // Get guildId from campaign for Discord URL
-    const campaign = await getCampaignWithGuildId(session.campaignId);
-    const guildId = campaign?.guildId ?? '';
 
     return (
       `⏰ **Session Reminder**\n\n` +
-      `🎲 **[${session.name}](https://discord.com/channels/${guildId}/${session.campaignId}/${session.id})** starts in 1 hour!\n` +
+      `🎲 **[${session.name}](https://discord.com/channels/${session.guildId}/${session.campaignId}/${session.id})** starts in 1 hour!\n` +
       `📅 **Time:** ${sessionTime}\n` +
       `🏰 **Channel:** <#${session.campaignId}>\n` +
       `👥 **Party Size:** ${session.partyMembers.length}/6 members\n\n` +

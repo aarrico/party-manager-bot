@@ -69,6 +69,7 @@ function mockSession(
     date: new Date(Date.now() + 86400000), // tomorrow
     timezone: 'America/Los_Angeles',
     campaignId: 'channel-1',
+    guildId: 'guild-1',
     status: 'SCHEDULED',
     partyMembers: [
       {

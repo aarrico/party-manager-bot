@@ -13,6 +13,7 @@ export type Session = {
   date: Date;
   timezone: string;
   campaignId: string; // Discord channel ID where session message is posted
+  guildId: string; // Discord guild ID from the associated campaign
   eventId?: string | null;
   status?: SessionStatus;
 };
